@@ -1,0 +1,198 @@
+#!/usr/bin/env ruby
+
+require 'erubis'
+require 'active_support/inflector'
+require 'method_source'
+
+cfg = 'ServersmithFile'
+
+if !File.exist?(cfg)
+  puts "#{cfg} not found"
+  exit(1)
+end
+
+class FieldDsl
+  def initialize(name, type)
+    @name = name
+    @type = type
+  end
+
+  def dbtype
+    if @type == :string
+      :string
+    elsif @type == :integer
+      :integer
+    else
+      raise "Field type #{type} not valid"
+    end
+  end
+
+  def dbname
+    @name
+  end
+
+end
+
+class ResourceDsl
+  attr_reader :fields, :flags, :triggers
+  def initialize
+    @fields = {}
+    @flags = {
+      deletable: false
+    }
+    @triggers = {}
+  end
+
+  def field(name, type, &block)
+    raise "field name cannot start with underscore" if name.start_with?('_')
+    name = name.to_s
+    raise "Field #{name} already exist" if @fields.key?(name)
+
+    f = FieldDsl.new(name, type)
+    f.instance_eval(&block) if block
+    @fields[name] = f
+  end
+
+  def set(flag)
+    @flags[flag] = true
+  end
+
+  def on_create(&block)
+    @triggers[:create] = {
+      source: block.source.to_s.sub('on_create', 'blk = Proc.new')
+    }
+  end
+end
+
+class ServersmithFileDsl
+  attr_reader :resources
+  def initialize
+    @resources = {}
+  end
+
+  def resource(name, &block)
+    name = name.to_s
+    raise "resource #{name} already exist" if @resources.key?(name)
+
+    r = ResourceDsl.new
+    r.instance_eval(&block)
+    @resources[name] = r
+  end
+end
+
+content = File.read(cfg)
+
+ssf = ServersmithFileDsl.new
+ssf.instance_eval(content, cfg)
+
+class RzCodeGen
+  attr_reader :dsl
+  def initialize(ssdsl)
+    @dsl = ssdsl
+  end
+
+  def generator_for(file)
+    base_data_dir = File.join(Gem.loaded_specs['serversmith'].full_gem_path, 'data', 'serversmith', 'generators', 'rz')
+    template = File.join(base_data_dir, file)
+    Erubis::Eruby.new(File.read(template), filename: template)
+  end
+
+  def generate_resources
+    result = {}
+    dsl.resources.each_with_index do |(resource_name, resource_info), idx|
+
+      inf = {
+        dsl: dsl,
+        resource_name: resource_name,
+        resource_info: resource_info
+      }
+
+      generator = generator_for('api.rb.erb')
+
+      result["app/apis/v1_api/#{resource_name}_api.rb"] = {
+        content: generator.result(inf)
+      }
+
+      generator = generator_for('db.rb.erb')
+
+      result["db/migrate/20220101#{idx.to_s.rjust(6,'0')}_create_#{resource_name}.rb"] = {
+        content: generator.result(inf)
+      }
+
+      generator = generator_for('model.rb.erb')
+
+      result["app/models/#{resource_name}.rb"] = {
+        content: generator.result(inf)
+      }
+
+      generator = generator_for('job.rb.erb')
+
+      result["app/jobs/#{resource_name}_create_trigger_job.rb"] = {
+        content: generator.result(inf)
+      }
+    end
+    result
+  end
+
+  def generate_root
+    result = {}
+
+    apilist = []
+
+    dsl.resources.each do |resource_name, _|
+      apilist << "    mount #{resource_name.to_s.camelize}Api"
+    end
+
+    generator = generator_for('main_api.rb.erb')
+
+    result["app/apis/main_api.rb"] = {
+      content: generator.result({dsl: dsl})
+    }
+
+    result
+  end
+
+  def generate
+    result = {}
+
+    generate_resources.each {|k,v| result[k]=v}
+    generate_root.each {|k,v| result[k]=v}
+
+    result
+  end
+
+end
+
+# r = RzCodeGen.new(ssf)
+# p r.generate
+
+
+
+class RailsZen
+  def initialize
+    if !Dir.exist?('.rz')
+      puts "setting up rz"
+      reset!
+    end
+  end
+
+  def reset!
+    `rm -rf .rz`
+    `git clone https://github.com/davidsiaw/rails-zen .rz`
+  end
+
+  def start!
+    `cd .rz && `
+  end
+
+  def apply(ssf)
+    rz = RzCodeGen.new(ssf)
+    rz.generate.each do |filename, info|
+      File.write(".rz/#{filename}", info[:content])
+    end
+  end
+end
+
+rz = RailsZen.new
+rz.reset!
+rz.apply(ssf)

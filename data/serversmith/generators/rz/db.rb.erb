@@ -1,0 +1,32 @@
+class Create<%= resource_name.to_s.camelize %> < ActiveRecord::Migration[5.2]
+  def change
+    create_table :<%= resource_name.to_s.pluralize %>, id: :uuid do |t|
+
+    <% resource_info.fields.each do |field_name, field_info| %>
+      t.<%= field_info.dbtype %> :<%= field_info.dbname %>,
+      	null: false, default: ''
+    <% end %>
+
+  	<% if resource_info.flags[:deletable] %>
+      t.datetime :deleted_at
+    <% end %>
+
+      t.datetime :updated_at
+
+  	<% if resource_info.triggers[:create] %>
+      t.datetime :create_trigger_started_at
+      t.datetime :create_trigger_finished_at
+    <% end %>
+    end
+
+  <% resource_info.fields.each do |field_name, field_info| %>
+    add_index :<%= resource_name.to_s.pluralize %>, :<%= field_info.dbname %>
+  <% end %>
+
+    add_index :<%= resource_name.to_s.pluralize %>, :updated_at
+
+  <% if resource_info.flags[:deletable] %>
+    add_index :<%= resource_name.to_s.pluralize %>, :deleted_at
+  <% end %>
+  end
+end

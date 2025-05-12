@@ -1,0 +1,22 @@
+class <%= resource_name.to_s.camelize %>CreateTriggerJob < ApplicationJob
+  queue_as :default
+
+  def perform(id)
+  	obj = <%= resource_name.to_s.camelize %>.find(id)
+
+  <% if resource_info.triggers[:create] %>
+
+  	<%= resource_info.triggers[:create][:source] %>
+
+  	obj.create_trigger_started_at = Time.now
+  	obj.save!
+
+  	blk.call(obj)
+
+  	obj.create_trigger_finished_at = Time.now
+  	obj.save!
+  	
+  <% end %>
+
+  end
+end

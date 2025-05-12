@@ -1,0 +1,89 @@
+# frozen_string_literal: true
+
+# GET <%= resource_name %>
+class <%= resource_name.to_s.camelize %>Api < Grape::API
+  resource :<%= resource_name %> do
+
+    desc 'GET <%= resource_name %>'
+    params do
+      requires :id, type: String, desc: '<%= resource_name.to_s.camelize %> ID.'
+    end
+    get ':id' do
+      obj = <%= resource_name.to_s.camelize %>.find(params[:id])
+
+      <% if resource_info.flags[:deletable] %>
+      if obj.deleted_at != nil
+        status 404
+        { error: :not_found }
+      else
+        { result: obj }
+      end
+      <% else %>
+      { result: obj }
+      <% end %>
+
+    rescue ActiveRecord::RecordNotFound
+      status 404
+      { error: :not_found }
+    end
+
+    desc 'GET <%= resource_name %> listing'
+    params do
+      optional :page, type: Integer, default: 1, desc: 'Page number'
+      optional :limit, type: Integer, default: 20, desc: 'Number of <%= resource_name.to_s.pluralize %> returned per page'
+    end
+    get do
+      query = <%= resource_name.to_s.camelize %>
+      <% if resource_info.flags[:deletable] %>
+      query = query.where(deleted_at: nil)
+      <% end %>
+      res = query.offset(params[:page] - 1).limit(params[:per_page])
+
+      { result: res }
+    end
+
+  <% if !resource_info.flags[:readonly] %>
+
+    desc 'POST <%= resource_name %>'
+    params do
+    <% resource_info.fields.each do |field_name, field_info| %>
+      # <%= field_info.dbname %> <%= field_info.dbtype %>
+      requires :<%= field_info.dbname %>, type: <%= field_info.dbtype.to_s.camelize %>, desc: '<%= resource_name.to_s.camelize %> <%= field_info.dbname %>'
+    <% end %>
+    end
+    post do
+      obj = <%= resource_name.to_s.camelize %>.create!(params)
+
+      <%= resource_name.to_s.camelize %>CreateTriggerJob.perform_later(obj.id)
+
+      { result: obj }
+    end
+
+
+    <% if resource_info.flags[:deletable] %>
+    desc 'DELETE <%= resource_name %>'
+    params do
+      requires :id, type: String, desc: '<%= resource_name.to_s.camelize %> ID.'
+    end
+    delete ':id' do
+      obj = <%= resource_name.to_s.camelize %>.find(params[:id])
+
+      if obj.deleted_at != nil
+        status 404
+        { error: :not_found }
+      else
+        obj.deleted_at = Time.now
+        obj.save!
+        { result: :ok }
+      end
+
+    rescue ActiveRecord::RecordNotFound
+      status 404
+      { error: :not_found }
+    end
+    <% end %>
+
+  <% end # if !resource_info.flags[:readonly] %>
+
+  end
+end

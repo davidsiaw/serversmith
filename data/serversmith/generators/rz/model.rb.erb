@@ -1,0 +1,7 @@
+class <%= resource_name.to_s.camelize %> < ApplicationRecord
+  has_paper_trail
+
+  <% resource_info.fields.each do |field_name, field_info| %>
+  	# <%= field_info.dbname %> <%= field_info.dbtype %>
+  <% end %>
+end
