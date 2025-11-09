@@ -1,0 +1,15 @@
+# frozen_string_literal: true
+
+<% dsl.resources.each do |name, info| %>
+require '<%= dsl.props[:package_name] %>/<%= name %>'
+<% end %>
+
+module <%= dsl.props[:package_name].camelize %>
+  class Client
+    def initialize(url)
+      @url = url
+    end
+
+    
+  end
+end

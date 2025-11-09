@@ -1,0 +1,29 @@
+# frozen_string_literal: true
+
+require_relative 'lib/<%= dsl.props[:package_name] %>/version'
+
+Gem::Specification.new do |spec|
+  spec.name          = '<%= dsl.props[:package_name] %>'
+  spec.version       = <%= dsl.props[:package_name].camelize %>::VERSION
+  spec.authors       = <%= dsl.props[:package_authors].inspect %>
+  spec.email         = <%= dsl.props[:package_emails].inspect %>
+
+  spec.summary       = 'Gem for using <%= dsl.props[:package_name].camelize %> API'
+  spec.description   = 'Generated gem'
+  spec.homepage      = <%= dsl.props[:package_homepage].inspect %>
+  spec.license       = <%= dsl.props[:package_license].inspect %>
+  spec.required_ruby_version = Gem::Requirement.new('>= 3.0')
+
+  spec.metadata['allowed_push_host'] = 'https://rubygems.org'
+
+  spec.metadata['homepage_uri'] = spec.homepage
+  spec.metadata['source_code_uri'] = <%= (dsl.props[:package_source_uri] || dsl.props[:package_homepage]).inspect %>
+  spec.metadata['changelog_uri'] = <%= (dsl.props[:package_changelog_uri] || dsl.props[:package_homepage]).inspect %>
+
+  spec.files         = Dir['{exe,data,lib}/**/*'] + %w[Gemfile <%= dsl.props[:package_name] %>.gemspec]
+  spec.bindir        = 'exe'
+  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.require_paths = ['lib']
+
+  spec.add_development_dependency 'rubocop'
+end
