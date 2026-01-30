@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+
+require '<%= dsl.props[:package_name] %>'
+require 'yaml'
+require 'json'
+
+url = ARGV[0]
+meth = ARGV[1]
+item = ARGV[2]
+info = ARGV[3]
+
+client = <%= dsl.props[:package_name].camelize %>::Client.new(url)
+
+inf = nil
+pos = 3
+loop do
+  break if ARGV[pos].nil?
+
+  if ARGV[pos].start_with?('--')
+    inf ||= {}
+    name = ARGV[pos][2..]
+    val = ARGV[pos+1]
+    inf[name] = val
+
+    pos += 1
+  end
+
+  pos += 1
+end
+
+
+resp = client.send(:"#{meth}_item", item, inf&.to_json || info)
+
+puts JSON.parse(resp).to_yaml

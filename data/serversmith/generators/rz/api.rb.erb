@@ -47,8 +47,15 @@ class <%= resource_name.to_s.camelize %>Api < Grape::API
     desc 'POST <%= resource_name %>'
     params do
     <% resource_info.fields.each do |field_name, field_info| %>
+      <% if field_info.dbtype.to_s.start_with?("userdef_") %>
+      <% tablename = field_info.dbtype.to_s[8..] %>
+      # <%= field_info.dbname %> <%= field_info.dbtype %>
+      requires :<%= field_info.dbname %>_id, type: :string, desc: 'ID of a <%= tablename.to_s.camelize %>'
+      <% else %>
       # <%= field_info.dbname %> <%= field_info.dbtype %>
       requires :<%= field_info.dbname %>, type: <%= field_info.dbtype.to_s.camelize %>, desc: '<%= resource_name.to_s.camelize %> <%= field_info.dbname %>'
+      <% end %>
+
     <% end %>
     end
     post do

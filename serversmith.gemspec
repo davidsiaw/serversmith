@@ -28,6 +28,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'activesupport'
   spec.add_dependency 'erubis'
   spec.add_dependency 'method_source'
+  spec.add_dependency 'chino'
 
   spec.add_development_dependency 'rake', '~> 12.0'
   spec.add_development_dependency 'rspec', '~> 3.0'

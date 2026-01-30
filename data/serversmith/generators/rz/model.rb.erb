@@ -2,6 +2,17 @@ class <%= resource_name.to_s.camelize %> < ApplicationRecord
   has_paper_trail
 
   <% resource_info.fields.each do |field_name, field_info| %>
-  	# <%= field_info.dbname %> <%= field_info.dbtype %>
+    <% if field_info.dbtype.to_s.start_with?("userdef_") %>
+    <% tablename = field_info.dbtype.to_s[8..] %>
+
+    # <%= field_info.dbname %>_id is a <%= tablename %>
+    ulid :<%= field_info.dbname %>_id
+    belongs_to :<%= field_info.dbname %>, class_name: :<%= tablename.pluralize %>, foreign_key: :<%= field_info.dbname %>_id
+
+    <% else %>
+    # <%= field_info.dbname %> <%= field_info.dbtype %>
+    <% end %>
+
+  	
   <% end %>
 end

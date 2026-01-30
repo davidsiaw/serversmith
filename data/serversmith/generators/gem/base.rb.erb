@@ -4,12 +4,37 @@
 require '<%= dsl.props[:package_name] %>/<%= name %>'
 <% end %>
 
+require 'excon'
+
 module <%= dsl.props[:package_name].camelize %>
   class Client
+
     def initialize(url)
       @url = url
     end
 
-    
+    def uri_obj
+      @uri_obj = URI(@url)
+    end
+
+    def get_item(klas, id)
+      conn = Excon.new("#{@url}/api/v1/#{klas}/#{id}")
+      resp = conn.get
+      resp.body
+    end
+
+    def post_item(klas, json)
+      conn = Excon.new(
+        "#{@url}/api/v1/#{klas}",
+        body: json,
+        headers: {
+          "Content-Type" => 'application/json'
+        }
+      )
+
+      resp = conn.post
+      resp.body
+    end
+
   end
 end

@@ -36,6 +36,38 @@ To connect to the server you will need to go
 client = <%= dsl.props[:package_name].camelize %>.Client.new('https://<server location>')
 ```
 
+## CLI
+
+Installing gives you access to the CLI
+
+You can use the CLI to interact with your server
+
+### GET
+
+```bash
+<%= dsl.props[:package_name].to_s %> https://<server location> get <name_of_resource> [id]
+```
+
+Example:
+
+
+```bash
+<%= dsl.props[:package_name].to_s %> https://myserver.com get song 1KG6X86JVX74FDZ8VT2K2WXJ1
+```
+
+
+### POST
+
+```bash
+<%= dsl.props[:package_name].to_s %> https://<server location> post <name_of_resource> --field1 fieldvalue ...
+```
+
+Example:
+
+```bash
+<%= dsl.props[:package_name].to_s %> https://myserver.com post song --artist 'linkedin park' --name 'breaking the intern'
+```
+
 
 ## Development
 

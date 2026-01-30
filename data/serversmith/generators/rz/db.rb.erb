@@ -3,8 +3,15 @@ class Create<%= resource_name.to_s.camelize %> < ActiveRecord::Migration[5.2]
     create_table :<%= resource_name.to_s.pluralize %>, id: :uuid do |t|
 
     <% resource_info.fields.each do |field_name, field_info| %>
+      <% if field_info.dbtype.to_s.start_with?("userdef_") %>
+      <% tablename = field_info.dbtype.to_s[8..] %>
+
+      t.references :<%= field_info.dbname %>_id,
+        null: false, index: true, foreign_key: { to_table: :<%= tablename.to_s.pluralize %> }
+      <% else %>
       t.<%= field_info.dbtype %> :<%= field_info.dbname %>,
       	null: false, default: ''
+      <% end %>
     <% end %>
 
   	<% if resource_info.flags[:deletable] %>
@@ -20,7 +27,10 @@ class Create<%= resource_name.to_s.camelize %> < ActiveRecord::Migration[5.2]
     end
 
   <% resource_info.fields.each do |field_name, field_info| %>
+    <% if field_info.dbtype.to_s.start_with?("userdef_") %>
+    <% else %>
     add_index :<%= resource_name.to_s.pluralize %>, :<%= field_info.dbname %>
+    <% end %>
   <% end %>
 
     add_index :<%= resource_name.to_s.pluralize %>, :updated_at

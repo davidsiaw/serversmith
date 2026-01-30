@@ -1,0 +1,17 @@
+# frozen_string_literal: true
+
+<% described_class = "#{dsl.props[:package_name].camelize}::Client" %>
+
+RSpec.describe <%= described_class %> do
+  it 'initializes with a URL' do
+  	obj = <%= described_class %>.new('https://test-url.com')
+  end
+
+  it 'test' do
+
+    stub_request(:get, "https://test.url/api/v1/song/1").to_return(body: '{"song": {name: "abc"}}')
+
+    obj = <%= described_class %>.new('https://test.url')
+    obj.get_song(1)
+  end
+end

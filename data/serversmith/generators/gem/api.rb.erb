@@ -2,5 +2,9 @@
 
 module <%= dsl.props[:package_name].camelize %>
   class <%= resource_name.to_s.camelize %>
+    # fields
+  <% resource_info.fields.each_with_index do |(field_name, field_info), i| %>
+    attr_accessor :<%= field_info.dbname %>
+  <% end %>
   end
 end

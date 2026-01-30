@@ -12,9 +12,12 @@ if !File.exist?(cfg)
 end
 
 class FieldDsl
+  attr_reader :examples
+  
   def initialize(name, type)
     @name = name
     @type = type
+    @examples = []
   end
 
   def dbtype
@@ -23,7 +26,7 @@ class FieldDsl
     elsif @type == :integer
       :integer
     else
-      raise "Field type #{type} not valid"
+      :"userdef_#{@type}"
     end
   end
 
@@ -51,6 +54,10 @@ class ResourceDsl
     f = FieldDsl.new(name, type)
     f.instance_eval(&block) if block
     @fields[name] = f
+  end
+
+  def example(name, exval)
+    @fields[name.to_s].examples << exval
   end
 
   def set(flag)
@@ -130,7 +137,7 @@ class RzCodeGen
 
       generator = generator_for('db.rb.erb', 'rz')
 
-      result[".rz/db/migrate/20220101#{idx.to_s.rjust(6,'0')}_create_#{resource_name}.rb"] = {
+      result[".rz/db/migrate/30000101#{idx.to_s.rjust(6,'0')}_create_#{resource_name}.rb"] = {
         content: generator.result(inf)
       }
 
@@ -149,6 +156,12 @@ class RzCodeGen
       generator = generator_for('api.rb.erb', 'gem')
 
       result[".gem/lib/#{dsl.props[:package_name]}/#{resource_name}.rb"] = {
+        content: generator.result(inf)
+      }
+
+      generator = generator_for('api_spec.rb.erb', 'gem')
+
+      result[".gem/spec/#{resource_name}_spec.rb"] = {
         content: generator.result(inf)
       }
     end
@@ -172,6 +185,7 @@ class RzCodeGen
 
     `rm -rf .gem/lib/base`
     `rm -rf .gem/lib/base.rb`
+    `rm -rf .gem/spec/base_spec.rb`
     `rm -rf .gem/*.gemspec`
 
     generator = generator_for('gemspec.rb.erb', 'gem')
@@ -194,11 +208,36 @@ class RzCodeGen
       content: generator.result({dsl: dsl})
     }
 
+    generator = generator_for('base_spec.rb.erb', 'gem')
+
+    result[".gem/spec/#{dsl.props[:package_name]}_spec.rb"] = {
+      content: generator.result({dsl: dsl})
+    }
+
+    generator = generator_for('client_spec.rb.erb', 'gem')
+
+    result[".gem/spec/client_spec.rb"] = {
+      content: generator.result({dsl: dsl})
+    }
+
+    generator = generator_for('spec_helper.rb.erb', 'gem')
+
+    result[".gem/spec/spec_helper.rb"] = {
+      content: generator.result({dsl: dsl})
+    }
+
     generator = generator_for('README.md.erb', 'gem')
 
     result[".gem/README.md"] = {
       content: generator.result({dsl: dsl})
     }
+
+    generator = generator_for('executable.erb', 'gem')
+
+    result[".gem/exe/#{dsl.props[:package_name]}"] = {
+      content: generator.result({dsl: dsl})
+    }
+
 
     result
   end
@@ -233,6 +272,10 @@ class RailsZen
 
     `rm -rf .gem`
     `git clone https://github.com/davidsiaw/gem-base .gem`
+
+    `rm -rf .fe`
+    `chino create serversmith_frontend`
+    `mv serversmith_frontend .fe`
   end
 
   def start!(ssf)

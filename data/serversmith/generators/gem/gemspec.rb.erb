@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email         = <%= dsl.props[:package_emails].inspect %>
 
   spec.summary       = 'Gem for using <%= dsl.props[:package_name].camelize %> API'
-  spec.description   = 'Generated gem'
+  spec.description   = 'Gem generated using Serversmith'
   spec.homepage      = <%= dsl.props[:package_homepage].inspect %>
   spec.license       = <%= dsl.props[:package_license].inspect %>
   spec.required_ruby_version = Gem::Requirement.new('>= 3.0')
@@ -25,5 +25,9 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
+  spec.add_dependency 'excon'
+
   spec.add_development_dependency 'rubocop'
+  spec.add_development_dependency 'rspec'
+  spec.add_development_dependency 'webmock'
 end

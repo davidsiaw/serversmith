@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+RSpec.describe <%= dsl.props[:package_name].camelize %> do
+  it 'has a version number' do
+    expect(<%= dsl.props[:package_name].camelize %>::VERSION).not_to be nil
+  end
+end
