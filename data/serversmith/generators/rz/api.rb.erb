@@ -53,7 +53,7 @@ class <%= resource_name.to_s.camelize %>Api < Grape::API
       requires :<%= field_info.dbname %>_id, type: :string, desc: 'ID of a <%= tablename.to_s.camelize %>'
       <% else %>
       # <%= field_info.dbname %> <%= field_info.dbtype %>
-      requires :<%= field_info.dbname %>, type: <%= field_info.dbtype.to_s.camelize %>, desc: '<%= resource_name.to_s.camelize %> <%= field_info.dbname %>'
+      requires :<%= field_info.dbname %>, type: <%= field_info.grape_param_type %>, desc: '<%= resource_name.to_s.camelize %> <%= field_info.dbname %>'
       <% end %>
 
     <% end %>
@@ -61,11 +61,28 @@ class <%= resource_name.to_s.camelize %>Api < Grape::API
     post do
       obj = <%= resource_name.to_s.camelize %>.create!(params)
 
+      <% if resource_info.info[:ghost_rate_limit] %>
+      # IF GHOST RATE LIMIT
+
+      cur_msepoch = (Time.now.to_f * 1000).to_i
+
+      # find out if the player's last request was less than <%= resource_info.info[:ghost_rate_limit][:amount] %>ms ago
+      prv_msepoch = Rails.cache.fetch(params[:<%= resource_info.info[:ghost_rate_limit][:keyname] %>])
+      Rails.cache.write(params[:<%= resource_info.info[:ghost_rate_limit][:keyname] %>], cur_msepoch)
+
+      if prv_msepoch.nil? || cur_msepoch - prv_msepoch > <%= resource_info.info[:ghost_rate_limit][:amount] %>
+        <%= resource_name.to_s.camelize %>CreateTriggerJob.perform_later(obj.id)
+      end
+
+      <% else %>
+      # IF NOT RATE LIMITED
+
       <%= resource_name.to_s.camelize %>CreateTriggerJob.perform_later(obj.id)
+
+      <% end %>
 
       { result: obj }
     end
-
 
     <% if resource_info.flags[:deletable] %>
     desc 'DELETE <%= resource_name %>'

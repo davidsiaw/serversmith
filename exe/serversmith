@@ -25,8 +25,22 @@ class FieldDsl
       :string
     elsif @type == :integer
       :integer
+    elsif @type == :bigint
+      :bigint
     else
       :"userdef_#{@type}"
+    end
+  end
+
+  def grape_param_type
+    if @type == :string
+      dbtype.to_s.camelize
+    elsif @type == :integer
+      dbtype.to_s.camelize
+    elsif @type == :bigint
+      'Integer'
+    else
+      dbtype.to_s.camelize
     end
   end
 
@@ -37,13 +51,14 @@ class FieldDsl
 end
 
 class ResourceDsl
-  attr_reader :fields, :flags, :triggers
+  attr_reader :fields, :flags, :triggers, :info
   def initialize
     @fields = {}
     @flags = {
       deletable: false
     }
     @triggers = {}
+    @info = {}
   end
 
   def field(name, type, &block)
@@ -68,6 +83,10 @@ class ResourceDsl
     @triggers[:create] = {
       source: block.source.to_s.sub('on_create', 'blk = Proc.new')
     }
+  end
+
+  def ghost_rate_limit(keyname, amount)
+    @info[:ghost_rate_limit] = { keyname: keyname, amount: amount }
   end
 end
 
